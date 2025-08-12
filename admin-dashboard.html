@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard – PropVest</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body data-page="admin-dashboard" class="bg-gray-50 text-gray-900">
+    <div class="min-h-screen grid lg:grid-cols-[260px_1fr]">
+      <aside class="hidden lg:block bg-white border-r border-gray-100 p-6">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-xl bg-emerald-600"></div>
+          <span class="font-extrabold tracking-tight text-lg">PropVest</span>
+        </a>
+        <nav class="mt-8 space-y-2">
+          <a href="admin-dashboard.html" class="block px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 font-semibold">Dashboard</a>
+          <a href="projects.html" class="block px-4 py-2 rounded-xl hover:bg-gray-50">Browse properties</a>
+        </nav>
+        <button id="logoutBtn" class="mt-8 w-full px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">Logout</button>
+      </aside>
+      <main class="p-6 lg:p-10">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-extrabold">Admin</h1>
+          <button id="addListingBtn" class="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">Add New Property</button>
+        </div>
+        <div class="mt-6 rounded-2xl bg-white shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 font-semibold">Recent Properties</div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+              <thead class="bg-gray-50 text-left text-sm">
+                <tr>
+                  <th class="px-6 py-3 font-semibold">Title</th>
+                  <th class="px-6 py-3 font-semibold">City</th>
+                  <th class="px-6 py-3 font-semibold">Category</th>
+                  <th class="px-6 py-3 font-semibold">Status</th>
+                  <th class="px-6 py-3 font-semibold">ROI</th>
+                  <th class="px-6 py-3 font-semibold">Target</th>
+                  <th class="px-6 py-3 font-semibold">Raised</th>
+                  <th class="px-6 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminListingsBody" class="divide-y divide-gray-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Listing Modal -->
+    <div id="listingModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Property form">
+      <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+        <form id="listingForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input type="hidden" name="id" />
+          <div class="md:col-span-2">
+            <h2 class="text-xl font-bold">Property</h2>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Title</label>
+            <input name="title" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">City</label>
+            <input name="city" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Category</label>
+            <select name="category" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none">
+              <option>Apartments</option>
+              <option>Condos</option>
+              <option>Villas</option>
+              <option>Townhouses</option>
+              <option>Land</option>
+              <option>Commercial</option>
+              <option>Office</option>
+              <option>Retail</option>
+              <option>Hospitality</option>
+              <option>Hotel</option>
+              <option>Resort</option>
+              <option>Mixed-Use</option>
+              <option>Industrial</option>
+              <option>Warehouse</option>
+              <option>Co-working</option>
+              <option>Student Housing</option>
+              <option>Senior Living</option>
+              <option>Beachfront</option>
+              <option>Mountain</option>
+              <option>City Center</option>
+              <option>Suburban</option>
+              <option>Development</option>
+              <option>REIT</option>
+              <option>Boutique</option>
+              <option>Luxury</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Status</label>
+            <select name="status" class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none">
+              <option>Active</option>
+              <option>Funding</option>
+              <option>Coming Soon</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Image URL</label>
+            <input name="imageUrl" placeholder="https://..." class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Or upload image</label>
+            <input name="imageFile" id="imageFile" type="file" accept="image/*" class="mt-1 w-full rounded-xl bg-gray-50 px-4 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Min Investment (LKR)</label>
+            <input name="minInvestment" type="number" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">ROI (%)</label>
+            <input name="roi" type="number" step="0.1" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Target Amount (LKR)</label>
+            <input name="targetAmount" type="number" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Total Raised (LKR)</label>
+            <input name="totalRaised" type="number" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Duration (months)</label>
+            <input name="durationMonths" type="number" required class="mt-1 w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+          </div>
+          <div class="md:col-span-2 flex items-center justify-end gap-3 mt-2">
+            <button type="button" class="px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold" onclick="document.getElementById('listingModal').classList.add('hidden')">Cancel</button>
+            <button class="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+ </html>
+
+

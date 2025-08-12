@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Property Details – PropVest Sri Lanka</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+  </head>
+  <body data-page="project-details" class="bg-gray-50 text-gray-900">
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-100">
+      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-xl bg-emerald-600"></div>
+          <span class="font-extrabold tracking-tight text-lg">PropVest</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="text-sm font-medium hover:text-emerald-700">Home</a>
+          <a href="projects.html" class="text-sm font-medium hover:text-emerald-700">Properties</a>
+        </div>
+        <div id="navAuth" class="flex items-center gap-3"></div>
+      </nav>
+    </header>
+
+    <main class="py-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-3 gap-8">
+          <div class="lg:col-span-2 space-y-6">
+            <div class="rounded-2xl overflow-hidden bg-white shadow-sm" data-aos="fade-up">
+              <img id="pdImage" src="" alt="Property image" class="w-full h-72 object-cover" />
+            </div>
+            <div class="space-y-2" data-aos="fade-up">
+              <h1 id="pdTitle" class="text-3xl font-extrabold">Property</h1>
+              <div class="flex flex-wrap gap-3 text-sm">
+                <span id="pdCity" class="px-3 py-1 rounded-full bg-gray-100">City</span>
+                <span id="pdRoi" class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700">ROI</span>
+                <span id="pdMinInv" class="px-3 py-1 rounded-full bg-gray-50">Min</span>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-white p-6 shadow-sm" data-aos="fade-up">
+              <div class="flex items-center justify-between">
+                <div class="font-semibold">Funding progress</div>
+                <div id="pdProgressText" class="text-sm text-gray-600">0%</div>
+              </div>
+              <div class="mt-3 h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div id="pdProgress" class="h-full bg-emerald-600 rounded-full" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Investment Panel -->
+          <aside class="lg:col-span-1">
+            <div class="rounded-2xl bg-white p-6 shadow-sm sticky top-24" data-aos="fade-left">
+              <h2 class="text-xl font-bold">Investment</h2>
+              <div class="mt-4 space-y-5">
+                <label for="investAmount" class="text-sm font-medium">Amount</label>
+                <input id="investAmount" type="range" min="0" max="0" step="1" class="w-full accent-emerald-600" />
+                <div class="flex items-center gap-3">
+                  <input id="investInput" type="number" class="w-full rounded-xl px-4 py-3 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+                  <div id="investValue" class="text-sm text-gray-600 whitespace-nowrap">LKR 0</div>
+                </div>
+                <button id="investCommit" class="w-full px-5 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow">Commit Investment</button>
+                <div class="pt-4 border-t border-gray-100">
+                  <h3 class="font-semibold">Invest with a team</h3>
+                  <p class="text-xs text-gray-600 mt-1">Invite other investors to pool funds for this property.</p>
+                  <div class="mt-3 flex gap-2">
+                    <input id="teamInviteEmail" type="email" placeholder="Enter email" class="flex-1 rounded-xl px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-emerald-300 outline-none" />
+                    <button id="teamInviteBtn" class="px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold">Invite</button>
+                  </div>
+                  <ul id="teamList" class="mt-3 space-y-2 text-sm"></ul>
+                </div>
+                <p class="text-xs text-gray-500">Investments are commitments toward funding. You can review them in your dashboard.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="border-t border-gray-100 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between">
+        <p class="text-sm text-gray-500">© <span id="year"></span> PropVest Sri Lanka.</p>
+        <a href="projects.html" class="px-5 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold">Back to properties</a>
+      </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script src="assets/js/app.js"></script>
+  </body>
+ </html>
+
+

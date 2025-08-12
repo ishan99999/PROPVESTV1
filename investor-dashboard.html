@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Investor Dashboard – PropVest</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body data-page="investor-dashboard" class="bg-gray-50 text-gray-900">
+    <header class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-xl bg-emerald-600"></div>
+          <span class="font-extrabold tracking-tight text-lg">PropVest</span>
+        </a>
+        <div class="flex items-center gap-3">
+          <a href="projects.html" class="px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold">Browse Properties</a>
+          <button id="logoutBtn" class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="py-10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="text-sm text-gray-600">Total invested</div>
+            <div id="sumInvested" class="mt-2 text-2xl font-extrabold">LKR 0</div>
+          </div>
+          <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="text-sm text-gray-600">Active properties</div>
+            <div id="sumProperties" class="mt-2 text-2xl font-extrabold">0</div>
+          </div>
+          <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="text-sm text-gray-600">Estimated ROI</div>
+            <div id="sumRoi" class="mt-2 text-2xl font-extrabold">—</div>
+          </div>
+        </div>
+
+        <div class="mt-10 rounded-2xl bg-white shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 font-semibold">Active Investments</div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+              <thead class="bg-gray-50 text-left text-sm">
+                <tr>
+                  <th class="px-6 py-3 font-semibold">Property</th>
+                  <th class="px-6 py-3 font-semibold">City</th>
+                  <th class="px-6 py-3 font-semibold">Amount</th>
+                  <th class="px-6 py-3 font-semibold">Date</th>
+                  <th class="px-6 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="investmentsBody" class="divide-y divide-gray-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <a href="projects.html" class="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">Browse more properties</a>
+        </div>
+      </div>
+    </main>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+ </html>
+
+

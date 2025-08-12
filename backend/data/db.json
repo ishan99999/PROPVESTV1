@@ -1,0 +1,61 @@
+{
+  "users": [
+    {
+      "id": "j_1yLUjHELAl8sEATDZFh",
+      "email": "admin@stake.com",
+      "password": "admin123",
+      "role": "admin",
+      "name": "Admin"
+    },
+    {
+      "id": "LPtXoV7x2V73tsaAm_0YD",
+      "email": "investor@stake.com",
+      "password": "investor123",
+      "role": "investor",
+      "name": "Investor"
+    }
+  ],
+  "listings": [
+    {
+      "id": "colombo-sky",
+      "title": "Colombo Sky Residences",
+      "city": "Colombo",
+      "category": "Apartments",
+      "status": "Funding",
+      "image": "",
+      "minInvestment": 250000,
+      "roi": 12.5,
+      "targetAmount": 60000000,
+      "totalRaised": 18500000,
+      "durationMonths": 24
+    },
+    {
+      "id": "galle-heritage",
+      "title": "Galle Heritage Hotel",
+      "city": "Galle",
+      "category": "Hospitality",
+      "status": "Active",
+      "image": "",
+      "minInvestment": 200000,
+      "roi": 10.2,
+      "targetAmount": 45000000,
+      "totalRaised": 37000000,
+      "durationMonths": 36
+    },
+    {
+      "id": "kandy-hills",
+      "title": "Kandy Hills Apartments",
+      "city": "Kandy",
+      "category": "Apartments",
+      "status": "Coming Soon",
+      "image": "",
+      "minInvestment": 150000,
+      "roi": 9.6,
+      "targetAmount": 30000000,
+      "totalRaised": 5000000,
+      "durationMonths": 18
+    }
+  ],
+  "investments": [],
+  "teamInvites": []
+}

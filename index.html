@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PropVest Sri Lanka – Luxury Real Estate Investing</title>
+    <meta name="description" content="Invest in curated Sri Lankan real estate with PropVest. Fractional investing, transparent returns, and a modern experience." />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+    <style>
+      :root { color-scheme: light; }
+      html { scroll-behavior: smooth; }
+      body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+      .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,0.6); }
+    </style>
+  </head>
+  <body data-page="home" class="bg-gray-50 text-gray-900">
+    <header class="sticky top-0 z-40 bg-white/80 glass border-b border-gray-100">
+      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 group" aria-label="PropVest home">
+          <div class="h-9 w-9 rounded-xl bg-emerald-600 shadow-sm"></div>
+          <span class="font-extrabold tracking-tight text-xl">PropVest</span>
+          <span class="sr-only">Sri Lanka</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="index.html" class="text-sm font-medium hover:text-emerald-700">Home</a>
+          <a href="projects.html" class="text-sm font-medium hover:text-emerald-700">Properties</a>
+          <a href="#how" class="text-sm font-medium hover:text-emerald-700">How it works</a>
+        </div>
+        <div id="navAuth" class="flex items-center gap-3"></div>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-emerald-50/60 via-white to-white"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div data-aos="fade-right">
+              <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                Invest in Sri Lanka’s finest properties
+              </h1>
+              <p class="mt-6 text-lg text-gray-600 max-w-2xl">
+                Fractional ownership, transparent returns, and a modern experience inspired by the world’s best platforms. All in LKR.
+              </p>
+              <div class="mt-8 flex flex-wrap gap-3">
+                <button id="ctaInvest" class="px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg">Invest now</button>
+                <a href="#how" class="px-6 py-3 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold">How it works</a>
+              </div>
+            </div>
+            <div id="heroVisual" class="relative will-change-transform" data-aos="fade-left">
+              <div class="absolute -top-10 -right-10 h-64 w-64 bg-emerald-100 rounded-full blur-3xl opacity-70"></div>
+              <div class="relative grid grid-cols-2 gap-6">
+                <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1200&auto=format&fit=crop" alt="Luxury apartment tower in Colombo" class="w-full rounded-2xl shadow-xl" />
+                <img src="https://images.unsplash.com/photo-1544989164-31dc3c645987?q=80&w=1200&auto=format&fit=crop" alt="Boutique coastal hotel in Galle" class="w-full rounded-2xl shadow-xl translate-y-8" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
+
+      <!-- Stats -->
+      <section class="py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" data-aos="fade-up">
+            <div class="rounded-2xl bg-white shadow-sm p-6 text-center">
+              <div class="text-4xl font-extrabold" data-countup data-to="12">0</div>
+              <div class="mt-2 text-gray-600">Avg. annual returns (%)</div>
+            </div>
+            <div class="rounded-2xl bg-white shadow-sm p-6 text-center">
+              <div class="text-4xl font-extrabold" data-countup data-to="8">0</div>
+              <div class="mt-2 text-gray-600">Avg. rental yield (%)</div>
+            </div>
+            <div class="rounded-2xl bg-white shadow-sm p-6 text-center">
+              <div class="text-4xl font-extrabold" data-countup data-to="10">0</div>
+              <div class="mt-2 text-gray-600">Annual appreciation (%)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Featured properties -->
+      <section class="py-12" aria-labelledby="featured-heading">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-end justify-between mb-6">
+            <h2 id="featured-heading" class="text-2xl font-bold">Featured properties</h2>
+            <a href="projects.html" class="text-emerald-700 font-semibold">Browse all</a>
+          </div>
+          <div id="featuredGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-aos="fade-up"></div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section id="how" class="py-16 bg-white border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-3xl font-extrabold">How it works</h2>
+          <div class="grid md:grid-cols-3 gap-6 mt-8" data-aos="fade-up">
+            <div class="rounded-2xl bg-gray-50 p-6">
+              <div class="text-emerald-700 font-semibold">01</div>
+              <h3 class="mt-2 font-bold">Browse & select</h3>
+              <p class="text-gray-600 mt-2">Explore curated opportunities across Colombo, Galle, Kandy, and more.</p>
+            </div>
+            <div class="rounded-2xl bg-gray-50 p-6">
+              <div class="text-emerald-700 font-semibold">02</div>
+              <h3 class="mt-2 font-bold">Invest in LKR</h3>
+              <p class="text-gray-600 mt-2">Start with low minimums. Transparent fees and progress tracking.</p>
+            </div>
+            <div class="rounded-2xl bg-gray-50 p-6">
+              <div class="text-emerald-700 font-semibold">03</div>
+              <h3 class="mt-2 font-bold">Earn & monitor</h3>
+              <p class="text-gray-600 mt-2">Track returns, rent, and appreciation from your dashboard.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-gray-100 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-sm text-gray-500">© <span id="year"></span> PropVest Sri Lanka. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Authentication">
+      <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" data-aos="zoom-in">
+        <h3 class="text-lg font-bold">Welcome to PropVest</h3>
+        <p class="text-sm text-gray-600 mt-1">Login or create an investor account to continue.</p>
+        <div class="mt-6 flex gap-3">
+          <a id="goLogin" href="login.html" class="flex-1 text-center px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">Login</a>
+          <a id="goSignup" href="register.html" class="flex-1 text-center px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold">Sign up</a>
+        </div>
+        <button type="button" class="mt-4 w-full text-sm text-gray-500 hover:text-gray-700" onclick="document.getElementById('authModal').classList.add('hidden');document.getElementById('authModal').classList.remove('flex')">Close</button>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
+    <script src="assets/js/app.js"></script>
+  </body>
+ </html>
+
+
