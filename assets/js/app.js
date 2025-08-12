@@ -7,6 +7,30 @@
     teamInvites: 'stakeTeamInvites'
   };
 
+  // Backend API configuration and helpers
+  const API_BASE = (window.API_BASE || localStorage.getItem('stakeApiBase') || 'http://localhost:4000') + '/api';
+  const getToken = () => localStorage.getItem('stakeToken');
+  const setAuth = (user, token) => { setJSON(STORAGE_KEYS.user, user); localStorage.setItem('stakeToken', token); };
+  const clearAuth = () => { localStorage.removeItem('stakeToken'); localStorage.removeItem(STORAGE_KEYS.user); };
+  async function apiRequest(path, { method = 'GET', body = null, auth = false } = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (auth && getToken()) headers['Authorization'] = `Bearer ${getToken()}`;
+    const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    const text = await res.text();
+    let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    if (!res.ok) { throw new Error((data && (data.error || data.message)) || `Request failed: ${res.status}`); }
+    return data;
+  }
+  const apiGet = (path, auth = false) => apiRequest(path, { method: 'GET', auth });
+  const apiPost = (path, body, auth = false) => apiRequest(path, { method: 'POST', body, auth });
+
+  // Cache listings from backend for client-side filtering
+  let cachedListings = null;
+  async function fetchListingsFromBackend() {
+    cachedListings = await apiGet('/listings');
+    return cachedListings;
+  }
+
   /* ------------------------- Utilities & Storage ------------------------- */
   const getJSON = (key, fallback = null) => {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -97,7 +121,7 @@
   const logout = () => { 
     showInfo('Logging out...');
     setTimeout(() => {
-      localStorage.removeItem(STORAGE_KEYS.user); 
+      clearAuth();
       window.location.href = 'index.html'; 
     }, 500);
   };
@@ -245,19 +269,19 @@
   /* ---------------------------- Helper Renders --------------------------- */
   function renderFeatured() {
     const grid = byId('featuredGrid'); if (!grid) return;
-    try {
-      const listings = getListings();
-      const featured = listings.slice(0, 3);
-      grid.innerHTML = featured.map(cardTemplate).join('');
-      attachProgressAnimations(grid);
-      if (featured.length > 0) {
-        showSuccess(`Loaded ${featured.length} featured properties`);
+    (async () => {
+      try {
+        const listings = await fetchListingsFromBackend();
+        const featured = listings.slice(0, 3);
+        grid.innerHTML = featured.map(cardTemplate).join('');
+        attachProgressAnimations(grid);
+        if (featured.length > 0) { showSuccess(`Loaded ${featured.length} featured properties`); }
+      } catch (error) {
+        console.error('Failed to render featured:', error);
+        grid.innerHTML = '<p class="text-gray-500">Failed to load featured properties</p>';
+        showError('Failed to load featured properties');
       }
-    } catch (error) {
-      console.error('Failed to render featured:', error);
-      grid.innerHTML = '<p class="text-gray-500">Failed to load featured properties</p>';
-      showError('Failed to load featured properties');
-    }
+    })();
   }
 
   function renderNavAuth() {
@@ -284,20 +308,20 @@
 
   function renderProjectsGrid() {
     const grid = byId('listingsGrid'); if (!grid) return;
-    try {
-      const listings = getListings();
-      const filtered = applyFilters(listings);
-      byId('listingsCount') && (byId('listingsCount').textContent = String(filtered.length));
-      grid.innerHTML = filtered.map(cardTemplate).join('');
-      attachProgressAnimations(grid);
-      if (filtered.length > 0) {
-        showSuccess(`Loaded ${filtered.length} properties`);
+    (async () => {
+      try {
+        const listings = cachedListings || await fetchListingsFromBackend();
+        const filtered = applyFilters(listings);
+        byId('listingsCount') && (byId('listingsCount').textContent = String(filtered.length));
+        grid.innerHTML = filtered.map(cardTemplate).join('');
+        attachProgressAnimations(grid);
+        if (filtered.length > 0) { showSuccess(`Loaded ${filtered.length} properties`); }
+      } catch (error) {
+        console.error('Failed to render projects grid:', error);
+        grid.innerHTML = '<p class="text-gray-500">Failed to load properties</p>';
+        showError('Failed to load properties');
       }
-    } catch (error) {
-      console.error('Failed to render projects grid:', error);
-      grid.innerHTML = '<p class="text-gray-500">Failed to load properties</p>';
-      showError('Failed to load properties');
-    }
+    })();
   }
 
   function applyFilters(listings) {
@@ -558,125 +582,113 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     
-    try {
-      const listing = findListingById(id);
-      if (!listing) { showError('Property not found'); window.location.href = 'projects.html'; return; }
-      
-      // Fill content
-      byId('pdImage').src = listing.image;
-      byId('pdImage').alt = `${listing.title} in ${listing.city}`;
-      byId('pdTitle').textContent = listing.title;
-      byId('pdCity').textContent = listing.city;
-      byId('pdRoi').textContent = `${listing.roi}% ROI`;
-      byId('pdMinInv').textContent = `Min ${currencyLKR(listing.minInvestment)}`;
-      const pct = Math.min(100, Math.round((listing.totalRaised / listing.targetAmount) * 100));
-      byId('pdProgressText').textContent = `${pct}%`; byId('pdProgress').style.width = '0%';
-      requestAnimationFrame(() => { byId('pdProgress').style.transition = 'width 1s ease'; byId('pdProgress').style.width = pct + '%'; });
+    (async () => {
+      try {
+        const listing = await apiGet(`/listings/${encodeURIComponent(id)}`);
+        if (!listing) { showError('Property not found'); window.location.href = 'projects.html'; return; }
+        
+        // Fill content
+        byId('pdImage').src = listing.image;
+        byId('pdImage').alt = `${listing.title} in ${listing.city}`;
+        byId('pdTitle').textContent = listing.title;
+        byId('pdCity').textContent = listing.city;
+        byId('pdRoi').textContent = `${listing.roi}% ROI`;
+        byId('pdMinInv').textContent = `Min ${currencyLKR(listing.minInvestment)}`;
+        const pct = Math.min(100, Math.round((listing.totalRaised / listing.targetAmount) * 100));
+        byId('pdProgressText').textContent = `${pct}%`; byId('pdProgress').style.width = '0%';
+        requestAnimationFrame(() => { byId('pdProgress').style.transition = 'width 1s ease'; byId('pdProgress').style.width = pct + '%'; });
 
-      // Investment controls
-      const slider = byId('investAmount');
-      const input = byId('investInput');
-      const display = byId('investValue');
-      const commitBtn = byId('investCommit');
-      const remaining = Math.max(0, listing.targetAmount - listing.totalRaised);
-      const step = Math.max(1, Number(listing.minInvestment));
-      const canInvest = listing.status === 'Active';
-      slider.min = String(step); slider.step = String(step);
-      slider.max = String(Math.max(step, Math.floor(remaining / step) * step));
-      slider.value = String(step);
-      input.value = String(step);
-      display.textContent = currencyLKR(step);
+        // Investment controls
+        const slider = byId('investAmount');
+        const input = byId('investInput');
+        const display = byId('investValue');
+        const commitBtn = byId('investCommit');
+        const remaining = Math.max(0, listing.targetAmount - listing.totalRaised);
+        const step = Math.max(1, Number(listing.minInvestment));
+        const canInvest = listing.status === 'Active';
+        slider.min = String(step); slider.step = String(step);
+        slider.max = String(Math.max(step, Math.floor(remaining / step) * step));
+        slider.value = String(step);
+        input.value = String(step);
+        display.textContent = currencyLKR(step);
 
-      if (!canInvest) {
-        slider.disabled = true; input.disabled = true; commitBtn.disabled = true;
-        commitBtn.textContent = 'Investing unavailable';
-        commitBtn.classList.remove('bg-emerald-600','hover:bg-emerald-700','text-white');
-        commitBtn.classList.add('bg-emerald-50','hover:bg-emerald-100','text-emerald-700','cursor-not-allowed');
-      }
-
-      function syncFromSlider() { input.value = slider.value; display.textContent = currencyLKR(slider.value); }
-      function syncFromInput() {
-        const raw = Math.max(step, Math.min(Number(slider.max), Number(input.value || 0)));
-        const snapped = Math.floor(raw / step) * step;
-        slider.value = String(snapped);
-        input.value = String(snapped);
-        display.textContent = currencyLKR(snapped);
-      }
-      slider.addEventListener('input', syncFromSlider);
-      input.addEventListener('input', syncFromInput);
-
-             byId('investCommit').addEventListener('click', () => {
-         if (listing.status !== 'Active') { showWarning('Investing is only available for Active listings.'); return; }
-         if (!isInvestor()) { window.location.href = 'login.html'; return; }
-         const amount = Number(input.value || 0);
-         if (!amount || amount < step) { showError('Please enter a valid amount.'); return; }
-         if (amount > remaining) { showError('Amount exceeds remaining target.'); return; }
-         
-         try {
-           createInvestment(listing.id, amount);
-           // Update listing raised
-           listing.totalRaised += amount;
-           upsertListing(listing);
-           showSuccess('Investment committed successfully! Redirecting to your dashboard...');
-           window.location.href = 'investor-dashboard.html';
-         } catch (error) {
-           showError('Failed to commit investment: ' + error.message);
-         }
-       });
-
-      // Team investing: invite by email
-      const inviteInput = byId('teamInviteEmail');
-      const inviteBtn = byId('teamInviteBtn');
-      const teamList = byId('teamList');
-      
-      async function renderTeam() {
-        if (!teamList) return;
-        try {
-          const invites = await getTeamInvites(listing.id);
-          teamList.innerHTML = invites.length ? invites.map((m) => `<li class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2"><span>${m.email} — ${m.status}</span><button data-email="${m.email}" class="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">Remove</button></li>`).join('') : '<li class="text-xs text-gray-500">No invites yet</li>';
-        } catch (error) {
-          console.error('Failed to load team invites:', error);
-          teamList.innerHTML = '<li class="text-xs text-gray-500">Failed to load invites</li>';
+        if (!canInvest) {
+          slider.disabled = true; input.disabled = true; commitBtn.disabled = true;
+          commitBtn.textContent = 'Investing unavailable';
+          commitBtn.classList.remove('bg-emerald-600','hover:bg-emerald-700','text-white');
+          commitBtn.classList.add('bg-emerald-50','hover:bg-emerald-100','text-emerald-700','cursor-not-allowed');
         }
+
+        function syncFromSlider() { input.value = slider.value; display.textContent = currencyLKR(slider.value); }
+        function syncFromInput() {
+          const raw = Math.max(step, Math.min(Number(slider.max), Number(input.value || 0)));
+          const snapped = Math.floor(raw / step) * step;
+          slider.value = String(snapped);
+          input.value = String(snapped);
+          display.textContent = currencyLKR(snapped);
+        }
+        slider.addEventListener('input', syncFromSlider);
+        input.addEventListener('input', syncFromInput);
+
+        byId('investCommit').addEventListener('click', async () => {
+          if (listing.status !== 'Active') { showWarning('Investing is only available for Active listings.'); return; }
+          if (!isInvestor()) { window.location.href = 'login.html'; return; }
+          const amount = Number(input.value || 0);
+          if (!amount || amount < step) { showError('Please enter a valid amount.'); return; }
+          if (amount > remaining) { showError('Amount exceeds remaining target.'); return; }
+          try {
+            await apiPost('/investments', { listingId: listing.id, amount }, true);
+            showSuccess('Investment committed successfully! Redirecting to your dashboard...');
+            window.location.href = 'investor-dashboard.html';
+          } catch (error) {
+            showError('Failed to commit investment: ' + error.message);
+          }
+        });
+
+        // Team invites
+        const inviteInput = byId('teamInviteEmail');
+        const inviteBtn = byId('teamInviteBtn');
+        const teamList = byId('teamList');
+
+        async function renderTeam() {
+          if (!teamList) return;
+          try {
+            const invites = await apiGet(`/teams/${encodeURIComponent(listing.id)}`, true);
+            teamList.innerHTML = invites.length ? invites.map((m) => `<li class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2"><span>${m.email} — ${m.status}</span><button data-email="${m.email}" class="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">Remove</button></li>`).join('') : '<li class="text-xs text-gray-500">No invites yet</li>';
+          } catch (error) {
+            console.error('Failed to load team invites:', error);
+            teamList.innerHTML = '<li class="text-xs text-gray-500">Failed to load invites</li>';
+          }
+        }
+        renderTeam();
+
+        inviteBtn && inviteBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          if (!isInvestor()) { window.location.href = 'login.html'; return; }
+          const email = (inviteInput?.value || '').trim();
+          if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showError('Please enter a valid email address'); return; }
+          try {
+            await apiPost(`/teams/${encodeURIComponent(listing.id)}/invite`, { email }, true);
+            inviteInput.value = '';
+            renderTeam();
+            showSuccess('Team invite sent successfully!');
+          } catch (error) {
+            showError('Failed to send invite: ' + error.message);
+          }
+        });
+
+        teamList && teamList.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-email]'); if (!btn) return;
+          const email = btn.getAttribute('data-email');
+          // Removing invites would need a DELETE endpoint; skipping here.
+        });
+
+      } catch (error) {
+        console.error('Failed to load project details:', error);
+        showError('Failed to load property details. Please try again.');
+        window.location.href = 'projects.html';
       }
-      
-      renderTeam();
-      
-             inviteBtn && inviteBtn.addEventListener('click', (e) => {
-         e.preventDefault();
-         if (!isInvestor()) { window.location.href = 'login.html'; return; }
-         const email = (inviteInput?.value || '').trim();
-         if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showError('Please enter a valid email address'); return; }
-         
-         try {
-           sendTeamInvite(listing.id, email);
-           inviteInput.value = '';
-           renderTeam();
-           showSuccess('Team invite sent successfully!');
-         } catch (error) {
-           showError('Failed to send invite: ' + error.message);
-         }
-       });
-      
-             teamList && teamList.addEventListener('click', (e) => {
-         const btn = e.target.closest('button[data-email]'); if (!btn) return;
-         const email = btn.getAttribute('data-email');
-         
-         try {
-           const invites = getTeamInvites(listing.id);
-           const updatedInvites = invites.filter((i) => i.email !== email);
-           setTeamInvites(listing.id, updatedInvites);
-           renderTeam();
-         } catch (error) {
-           console.error('Failed to remove invite:', error);
-         }
-       });
-      
-    } catch (error) {
-      console.error('Failed to load project details:', error);
-      showError('Failed to load property details. Please try again.');
-      window.location.href = 'projects.html';
-    }
+    })();
   }
 
   /* --------------------------- Admin Dashboard --------------------------- */
@@ -728,7 +740,7 @@
      });
 
          // Save form
-     form.addEventListener('submit', (e) => {
+     form.addEventListener('submit', async (e) => {
        e.preventDefault();
        const data = new FormData(form);
        const id = data.get('id')?.toString().trim() || slugify(String(data.get('title') || 'property') + '-' + Date.now());
@@ -748,7 +760,7 @@
              durationMonths: Number(data.get('durationMonths')),
            };
            try {
-             upsertListing(listing);
+             await upsertListing(listing);
              renderAdminTable();
              showSuccess('Property saved successfully');
              closeModal();
@@ -769,7 +781,7 @@
            durationMonths: Number(data.get('durationMonths')),
          };
          try {
-           upsertListing(listing);
+           await upsertListing(listing);
            renderAdminTable();
            showSuccess('Property saved successfully');
            closeModal();
@@ -870,24 +882,37 @@
     renderNavAuth();
     if (isLoggedIn()) { redirectByRole(); return; }
     const form = byId('loginForm'); if (!form) return;
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = form.email.value.trim();
       const password = form.password.value.trim();
-      
-      // Demo login - no backend needed
-      if (email === 'admin@stake.com' && password === 'admin123') {
-        const user = { email, role: 'admin', name: 'Admin User' };
-        setJSON(STORAGE_KEYS.user, user);
-        showSuccess(`Welcome back, ${user.name}!`);
-        setTimeout(() => redirectByRole(), 1000);
-      } else if (email === 'investor@stake.com' && password === 'investor123') {
-        const user = { email, role: 'investor', name: 'Demo Investor' };
-        setJSON(STORAGE_KEYS.user, user);
-        showSuccess(`Welcome back, ${user.name}!`);
-        setTimeout(() => redirectByRole(), 1000);
-      } else {
-        showError('Invalid credentials. Use demo accounts: admin@stake.com/admin123 or investor@stake.com/investor123');
+      try {
+        const { user, token } = await apiPost('/auth/login', { email, password });
+        setAuth(user, token);
+        showSuccess(`Welcome back, ${user.name || user.email}!`);
+        setTimeout(() => redirectByRole(), 800);
+      } catch (err) {
+        if (/not verified/i.test(err.message)) {
+          const code = prompt('Enter the 6-digit verification code sent to your email:');
+          if (code && code.length === 6) {
+            try {
+              const result = await apiPost('/auth/verify', { email, code });
+              const verifiedUser = result.user || { email };
+              const verifiedToken = result.token;
+              if (verifiedUser && verifiedToken) {
+                setAuth(verifiedUser, verifiedToken);
+                showSuccess('Email verified. Logging you in...');
+                setTimeout(() => redirectByRole(), 800);
+              }
+            } catch (verifyErr) {
+              showError('Verification failed: ' + verifyErr.message);
+            }
+          } else {
+            showError('Verification code required to proceed');
+          }
+        } else {
+          showError(err.message || 'Login failed');
+        }
       }
     });
   }
@@ -896,22 +921,32 @@
     renderNavAuth();
     if (isLoggedIn()) { redirectByRole(); return; }
     const form = byId('registerForm'); if (!form) return;
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = form.name.value.trim();
       const email = form.email.value.trim();
       const password = form.password.value.trim();
-      
-      if (!name || !email || !password) {
-        showError('Please fill in all fields');
-        return;
+      if (!name || !email || !password) { showError('Please fill in all fields'); return; }
+      try {
+        await apiPost('/auth/register', { name, email, password });
+        showInfo('Registration successful. Please enter the OTP sent to your email.');
+        const code = prompt('Enter the 6-digit verification code:');
+        if (code && code.length === 6) {
+          try {
+            const result = await apiPost('/auth/verify', { email, code });
+            const user = result.user; const token = result.token;
+            if (user && token) {
+              setAuth(user, token);
+              showSuccess(`Welcome to PropVest, ${user.name || user.email}!`);
+              setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+            }
+          } catch (verifyErr) {
+            showError('Verification failed: ' + verifyErr.message);
+          }
+        }
+      } catch (error) {
+        showError(error.message || 'Registration failed');
       }
-      
-      // Create investor account
-      const user = { email, role: 'investor', name };
-      setJSON(STORAGE_KEYS.user, user);
-      showSuccess(`Welcome to PropVest, ${user.name}!`);
-      setTimeout(() => { window.location.href = 'index.html'; }, 1500);
     });
   }
 
@@ -924,7 +959,7 @@
   /* ------------------------------- Bootstrap ----------------------------- */
   document.addEventListener('DOMContentLoaded', () => {
     // Initialize seed data
-    ensureSeedData();
+    // Disabled local demo seeding; data now comes from backend
     
     // Footer year
     const yearEl = byId('year'); if (yearEl) yearEl.textContent = String(new Date().getFullYear());
