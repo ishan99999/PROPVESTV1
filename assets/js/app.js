@@ -7,27 +7,20 @@
     teamInvites: 'stakeTeamInvites'
   };
 
-  // Backend API configuration and helpers
-  const API_BASE = (window.API_BASE || localStorage.getItem('stakeApiBase') || 'http://localhost:4000') + '/api';
-  const getToken = () => localStorage.getItem('stakeToken');
-  const setAuth = (user, token) => { setJSON(STORAGE_KEYS.user, user); localStorage.setItem('stakeToken', token); };
-  const clearAuth = () => { localStorage.removeItem('stakeToken'); localStorage.removeItem(STORAGE_KEYS.user); };
-  async function apiRequest(path, { method = 'GET', body = null, auth = false } = {}) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (auth && getToken()) headers['Authorization'] = `Bearer ${getToken()}`;
-    const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
-    const text = await res.text();
-    let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-    if (!res.ok) { throw new Error((data && (data.error || data.message)) || `Request failed: ${res.status}`); }
-    return data;
-  }
-  const apiGet = (path, auth = false) => apiRequest(path, { method: 'GET', auth });
-  const apiPost = (path, body, auth = false) => apiRequest(path, { method: 'POST', body, auth });
+  // Supabase helpers
+  const supa = () => window.supa;
+  const setAuth = (user) => { setJSON(STORAGE_KEYS.user, user); };
+  const clearAuth = () => { localStorage.removeItem(STORAGE_KEYS.user); };
 
   // Cache listings from backend for client-side filtering
   let cachedListings = null;
   async function fetchListingsFromBackend() {
-    cachedListings = await apiGet('/listings');
+    const { data, error } = await supa().from('listings').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    cachedListings = (data || []).map(r => ({
+      id: r.id, title: r.title, city: r.city, category: r.category, status: r.status, image: r.image,
+      minInvestment: Number(r.min_investment), roi: Number(r.roi), targetAmount: Number(r.target_amount), totalRaised: Number(r.total_raised), durationMonths: Number(r.duration_months), createdAt: r.created_at
+    }));
     return cachedListings;
   }
 
@@ -584,7 +577,10 @@
     
     (async () => {
       try {
-        const listing = await apiGet(`/listings/${encodeURIComponent(id)}`);
+        const { data: r, error } = await supa().from('listings').select('*').eq('id', id).single();
+        if (error) throw error;
+        const listing = { id: r.id, title: r.title, city: r.city, category: r.category, status: r.status, image: r.image,
+          minInvestment: Number(r.min_investment), roi: Number(r.roi), targetAmount: Number(r.target_amount), totalRaised: Number(r.total_raised), durationMonths: Number(r.duration_months), createdAt: r.created_at };
         if (!listing) { showError('Property not found'); window.location.href = 'projects.html'; return; }
         
         // Fill content
@@ -637,7 +633,10 @@
           if (!amount || amount < step) { showError('Please enter a valid amount.'); return; }
           if (amount > remaining) { showError('Amount exceeds remaining target.'); return; }
           try {
-            await apiPost('/investments', { listingId: listing.id, amount }, true);
+            const user = currentUser();
+            const { error: err } = await supa().from('investments').insert({ id: `inv_${Date.now()}`, listing_id: listing.id, amount });
+            if (err) throw err;
+            await supa().from('listings').update({ total_raised: (listing.totalRaised + amount) }).eq('id', listing.id);
             showSuccess('Investment committed successfully! Redirecting to your dashboard...');
             window.location.href = 'investor-dashboard.html';
           } catch (error) {
@@ -653,7 +652,9 @@
         async function renderTeam() {
           if (!teamList) return;
           try {
-            const invites = await apiGet(`/teams/${encodeURIComponent(listing.id)}`, true);
+            const { data, error } = await supa().from('team_invites').select('*').eq('listing_id', listing.id).order('date', { ascending: false });
+            if (error) throw error;
+            const invites = data || [];
             teamList.innerHTML = invites.length ? invites.map((m) => `<li class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2"><span>${m.email} — ${m.status}</span><button data-email="${m.email}" class="text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">Remove</button></li>`).join('') : '<li class="text-xs text-gray-500">No invites yet</li>';
           } catch (error) {
             console.error('Failed to load team invites:', error);
@@ -668,7 +669,8 @@
           const email = (inviteInput?.value || '').trim();
           if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showError('Please enter a valid email address'); return; }
           try {
-            await apiPost(`/teams/${encodeURIComponent(listing.id)}/invite`, { email }, true);
+            const { error: err } = await supa().from('team_invites').insert({ id: `ti_${Date.now()}`, listing_id: listing.id, email, status: 'Pending' });
+            if (err) throw err;
             inviteInput.value = '';
             renderTeam();
             showSuccess('Team invite sent successfully!');
@@ -827,7 +829,9 @@
     
     (async () => {
       try {
-        const investments = await apiGet('/investments', true);
+        const { data: invRows, error: invErr } = await supa().from('investments').select('*').order('date', { ascending: false });
+        if (invErr) throw invErr;
+        const investments = invRows || [];
         const listings = cachedListings || await fetchListingsFromBackend();
         const byIdMap = {};
         listings.forEach(l => byIdMap[l.id] = l);
@@ -835,14 +839,14 @@
         const tbody = document.getElementById('investmentsBody');
         if (tbody) {
           tbody.innerHTML = investments.length ? investments.map((inv) => {
-            const l = byIdMap[inv.listingId];
+            const l = byIdMap[inv.listing_id];
             const date = new Date(inv.date).toLocaleDateString();
             return `<tr>
-              <td class="px-6 py-3">${l?.title || inv.listingId}</td>
+              <td class="px-6 py-3">${l?.title || inv.listing_id}</td>
               <td class="px-6 py-3">${l?.city || '—'}</td>
               <td class="px-6 py-3">${currencyLKR(inv.amount)}</td>
               <td class="px-6 py-3">${date}</td>
-              <td class="px-6 py-3"><a href="project-details.html?id=${encodeURIComponent(inv.listingId)}" class="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold">View</a></td>
+              <td class="px-6 py-3"><a href="project-details.html?id=${encodeURIComponent(inv.listing_id)}" class="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold">View</a></td>
             </tr>`;
           }).join('') : '<tr><td colspan="5" class="text-center text-gray-500">No investments yet</td></tr>';
         }
@@ -850,11 +854,11 @@
         // Summary
         const sum = investments.reduce((n, i) => n + Number(i.amount || 0), 0);
         byId('sumInvested') && (byId('sumInvested').textContent = currencyLKR(sum));
-        const uniqueProperties = new Set(investments.map((i) => i.listingId)).size;
+        const uniqueProperties = new Set(investments.map((i) => i.listing_id)).size;
         byId('sumProperties') && (byId('sumProperties').textContent = String(uniqueProperties));
         if (investments.length > 0) {
           let totalRoi = 0; let count = 0;
-          investments.forEach(inv => { const l = byIdMap[inv.listingId]; if (l && l.roi) { totalRoi += Number(l.roi); count += 1; } });
+          investments.forEach(inv => { const l = byIdMap[inv.listing_id]; if (l && l.roi) { totalRoi += Number(l.roi); count += 1; } });
           const avgRoi = count ? (totalRoi / count) : 0;
           byId('sumRoi') && (byId('sumRoi').textContent = avgRoi.toFixed(1) + '% p.a.');
         } else {
@@ -882,33 +886,14 @@
       const email = form.email.value.trim();
       const password = form.password.value.trim();
       try {
-        const { user, token } = await apiPost('/auth/login', { email, password });
-        setAuth(user, token);
+        const { data, error } = await supa().auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        const user = { email: data.user.email, role: 'investor', name: data.user.user_metadata?.name || data.user.email };
+        setAuth(user);
         showSuccess(`Welcome back, ${user.name || user.email}!`);
         setTimeout(() => redirectByRole(), 800);
       } catch (err) {
-        if (/not verified/i.test(err.message)) {
-          try {
-            const resend = await apiPost('/auth/resend-otp', { email });
-            const code = resend.devOtp || prompt('Enter the 6-digit verification code sent to your email:');
-            if (code && String(code).length === 6) {
-              const result = await apiPost('/auth/verify', { email, code: String(code) });
-              const verifiedUser = result.user;
-              const verifiedToken = result.token;
-              if (verifiedUser && verifiedToken) {
-                setAuth(verifiedUser, verifiedToken);
-                showSuccess('Email verified. Logging you in...');
-                setTimeout(() => redirectByRole(), 800);
-              }
-            } else {
-              showError('Verification code required to proceed');
-            }
-          } catch (verifyErr) {
-            showError('Verification failed: ' + verifyErr.message);
-          }
-        } else {
-          showError(err.message || 'Login failed');
-        }
+        showError(err.message || 'Login failed');
       }
     });
   }
@@ -924,22 +909,10 @@
       const password = form.password.value.trim();
       if (!name || !email || !password) { showError('Please fill in all fields'); return; }
       try {
-        const reg = await apiPost('/auth/register', { name, email, password });
-        showInfo('Registration successful. Please verify your email.');
-        const code = reg.devOtp || prompt('Enter the 6-digit verification code:');
-        if (code && String(code).length === 6) {
-          try {
-            const result = await apiPost('/auth/verify', { email, code: String(code) });
-            const user = result.user; const token = result.token;
-            if (user && token) {
-              setAuth(user, token);
-              showSuccess(`Welcome to PropVest, ${user.name || user.email}!`);
-              setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-            }
-          } catch (verifyErr) {
-            showError('Verification failed: ' + verifyErr.message);
-          }
-        }
+        const { data, error } = await supa().auth.signUp({ email, password, options: { data: { name } } });
+        if (error) throw error;
+        showSuccess('Check your email to confirm your account');
+        window.location.href = 'login.html';
       } catch (error) {
         showError(error.message || 'Registration failed');
       }
@@ -954,8 +927,7 @@
 
   /* ------------------------------- Bootstrap ----------------------------- */
   document.addEventListener('DOMContentLoaded', () => {
-    // Initialize seed data
-    // Disabled local demo seeding; data now comes from backend
+    // Using Supabase backend; no local seeding
     
     // Footer year
     const yearEl = byId('year'); if (yearEl) yearEl.textContent = String(new Date().getFullYear());
