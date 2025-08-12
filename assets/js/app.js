@@ -825,54 +825,49 @@
     if (!isInvestor()) { window.location.href = 'login.html'; return; }
     const user = currentUser();
     
-    try {
-      const investments = getInvestments();
-      const all = investments.filter((i) => i.userEmail === user.email);
-      const listings = getListings();
-      const byIdMap = {};
-      listings.forEach(l => byIdMap[l.id] = l);
-      
-      const tbody = document.getElementById('investmentsBody');
-      if (tbody) {
-        tbody.innerHTML = all.map((inv) => {
-          const l = byIdMap[inv.listingId];
-          const date = new Date(inv.date).toLocaleDateString();
-          return `<tr>
-            <td class="px-6 py-3">${l?.title || inv.listingId}</td>
-            <td class="px-6 py-3">${l?.city || '—'}</td>
-            <td class="px-6 py-3">${currencyLKR(inv.amount)}</td>
-            <td class="px-6 py-3">${date}</td>
-            <td class="px-6 py-3"><a href="project-details.html?id=${encodeURIComponent(inv.listingId)}" class="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold">View</a></td>
-          </tr>`;
-        }).join('');
+    (async () => {
+      try {
+        const investments = await apiGet('/investments', true);
+        const listings = cachedListings || await fetchListingsFromBackend();
+        const byIdMap = {};
+        listings.forEach(l => byIdMap[l.id] = l);
+        
+        const tbody = document.getElementById('investmentsBody');
+        if (tbody) {
+          tbody.innerHTML = investments.length ? investments.map((inv) => {
+            const l = byIdMap[inv.listingId];
+            const date = new Date(inv.date).toLocaleDateString();
+            return `<tr>
+              <td class="px-6 py-3">${l?.title || inv.listingId}</td>
+              <td class="px-6 py-3">${l?.city || '—'}</td>
+              <td class="px-6 py-3">${currencyLKR(inv.amount)}</td>
+              <td class="px-6 py-3">${date}</td>
+              <td class="px-6 py-3"><a href="project-details.html?id=${encodeURIComponent(inv.listingId)}" class="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold">View</a></td>
+            </tr>`;
+          }).join('') : '<tr><td colspan="5" class="text-center text-gray-500">No investments yet</td></tr>';
+        }
+        
+        // Summary
+        const sum = investments.reduce((n, i) => n + Number(i.amount || 0), 0);
+        byId('sumInvested') && (byId('sumInvested').textContent = currencyLKR(sum));
+        const uniqueProperties = new Set(investments.map((i) => i.listingId)).size;
+        byId('sumProperties') && (byId('sumProperties').textContent = String(uniqueProperties));
+        if (investments.length > 0) {
+          let totalRoi = 0; let count = 0;
+          investments.forEach(inv => { const l = byIdMap[inv.listingId]; if (l && l.roi) { totalRoi += Number(l.roi); count += 1; } });
+          const avgRoi = count ? (totalRoi / count) : 0;
+          byId('sumRoi') && (byId('sumRoi').textContent = avgRoi.toFixed(1) + '% p.a.');
+        } else {
+          byId('sumRoi') && (byId('sumRoi').textContent = '—');
+        }
+      } catch (error) {
+        console.error('Failed to load investor data:', error);
+        const tbody = document.getElementById('investmentsBody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">Failed to load investments</td></tr>';
+        }
       }
-      
-      // Calculate summary stats
-      const sum = all.reduce((n, i) => n + i.amount, 0);
-      byId('sumInvested') && (byId('sumInvested').textContent = currencyLKR(sum));
-      
-      const uniqueProperties = new Set(all.map((i) => i.listingId)).size;
-      byId('sumProperties') && (byId('sumProperties').textContent = String(uniqueProperties));
-      
-      // Estimated ROI: average of involved listings
-      if (all.length > 0) {
-        let totalRoi = 0;
-        all.forEach(inv => {
-          const l = listings.find(l => l.id === inv.listingId);
-          if (l) totalRoi += l.roi;
-        });
-        const avgRoi = totalRoi / all.length;
-        byId('sumRoi') && (byId('sumRoi').textContent = avgRoi.toFixed(1) + '% p.a.');
-      } else {
-        byId('sumRoi') && (byId('sumRoi').textContent = '—');
-      }
-    } catch (error) {
-      console.error('Failed to load investor data:', error);
-      const tbody = document.getElementById('investmentsBody');
-      if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">Failed to load investments</td></tr>';
-      }
-    }
+    })();
     
     const out = byId('logoutBtn'); out && out.addEventListener('click', logout);
   }
@@ -893,22 +888,23 @@
         setTimeout(() => redirectByRole(), 800);
       } catch (err) {
         if (/not verified/i.test(err.message)) {
-          const code = prompt('Enter the 6-digit verification code sent to your email:');
-          if (code && code.length === 6) {
-            try {
-              const result = await apiPost('/auth/verify', { email, code });
-              const verifiedUser = result.user || { email };
+          try {
+            const resend = await apiPost('/auth/resend-otp', { email });
+            const code = resend.devOtp || prompt('Enter the 6-digit verification code sent to your email:');
+            if (code && String(code).length === 6) {
+              const result = await apiPost('/auth/verify', { email, code: String(code) });
+              const verifiedUser = result.user;
               const verifiedToken = result.token;
               if (verifiedUser && verifiedToken) {
                 setAuth(verifiedUser, verifiedToken);
                 showSuccess('Email verified. Logging you in...');
                 setTimeout(() => redirectByRole(), 800);
               }
-            } catch (verifyErr) {
-              showError('Verification failed: ' + verifyErr.message);
+            } else {
+              showError('Verification code required to proceed');
             }
-          } else {
-            showError('Verification code required to proceed');
+          } catch (verifyErr) {
+            showError('Verification failed: ' + verifyErr.message);
           }
         } else {
           showError(err.message || 'Login failed');
@@ -928,12 +924,12 @@
       const password = form.password.value.trim();
       if (!name || !email || !password) { showError('Please fill in all fields'); return; }
       try {
-        await apiPost('/auth/register', { name, email, password });
-        showInfo('Registration successful. Please enter the OTP sent to your email.');
-        const code = prompt('Enter the 6-digit verification code:');
-        if (code && code.length === 6) {
+        const reg = await apiPost('/auth/register', { name, email, password });
+        showInfo('Registration successful. Please verify your email.');
+        const code = reg.devOtp || prompt('Enter the 6-digit verification code:');
+        if (code && String(code).length === 6) {
           try {
-            const result = await apiPost('/auth/verify', { email, code });
+            const result = await apiPost('/auth/verify', { email, code: String(code) });
             const user = result.user; const token = result.token;
             if (user && token) {
               setAuth(user, token);
