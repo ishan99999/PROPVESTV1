@@ -315,7 +315,8 @@
   function cardTemplate(l) {
     const pct = Math.min(100, Math.round((l.totalRaised / l.targetAmount) * 100));
     const admin = isAdmin();
-    const canInvest = !admin && l.status === 'Active';
+    const isInvestorUser = isInvestor();
+    const canInvest = isInvestorUser && l.status === 'Active';
     const ctaHref = admin ? `#` : `project-details.html?id=${encodeURIComponent(l.id)}`;
     const ctaLabel = admin ? 'Edit Property' : (canInvest ? 'Invest Now' : 'View Details');
     const ctaClass = admin
@@ -425,6 +426,21 @@
         showInfo('Please login or sign up to start investing');
         modal.classList.remove('hidden'); 
         modal.classList.add('flex'); 
+      }
+    });
+
+    // Intercept featured card CTAs for unauthenticated users
+    const featuredGrid = byId('featuredGrid');
+    featuredGrid && featuredGrid.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-cta]');
+      if (!link) return;
+      if (!isInvestor() && !isAdmin()) {
+        e.preventDefault();
+        showInfo('Please login or sign up to invest');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
       }
     });
 
