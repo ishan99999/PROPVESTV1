@@ -243,6 +243,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const SMTP_CONFIGURED = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -258,6 +260,10 @@ async function sendOtpEmail(toEmail, code) {
       <p>This code will expire in 10 minutes. If you didn't request this, you can ignore this email.</p>
     </div>
   `;
+  if (!SMTP_CONFIGURED) {
+    console.warn('[DEV] SMTP not configured. OTP for', toEmail, 'is', code);
+    return; // dev no-op
+  }
   await transporter.sendMail({
     from: fromEmail,
     to: toEmail,
@@ -306,11 +312,15 @@ app.post('/api/auth/register', [
 
     sendOtpEmail(email, code)
       .then(() => {
-        res.status(201).json({ message: 'Registration successful. Please verify your email with the OTP sent.' });
+        const payload = { message: 'Registration successful. Please verify your email with the OTP sent.' };
+        if (!SMTP_CONFIGURED) payload.devOtp = code;
+        res.status(201).json(payload);
       })
       .catch((err) => {
         console.error('Failed to send OTP email:', err);
-        res.status(201).json({ message: 'Registration successful. Failed to send OTP email. Please use resend endpoint.' });
+        const payload = { message: 'Registration successful. Failed to send OTP email. Please use resend endpoint.' };
+        if (!SMTP_CONFIGURED) payload.devOtp = code;
+        res.status(201).json(payload);
       });
   } catch (error) {
     console.error('Registration error:', error);
@@ -420,7 +430,9 @@ app.post('/api/auth/resend-otp', [
     };
     saveData();
     await sendOtpEmail(email, code);
-    res.json({ message: 'OTP sent' });
+    const payload = { message: 'OTP sent' };
+    if (!SMTP_CONFIGURED) payload.devOtp = code;
+    res.json(payload);
   } catch (error) {
     console.error('Resend OTP error:', error);
     res.status(500).json({ error: 'Internal server error' });
